@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Huokaingthara Sentient Dashboard</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body { background: #050505; color: #00ff41; font-family: 'Courier New', Courier, monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: 350px; background: rgba(0, 20, 0, 0.95); border-right: 2px solid #00ff41; display: flex; flex-direction: column; padding: 15px; z-index: 10; box-shadow: 5px 0 15px rgba(0,255,65,0.2); }
+        #visualizer { flex-grow: 1; background: #000; }
+        #chat-output { flex-grow: 1; overflow-y: auto; border: 1px solid #004411; padding: 10px; margin-bottom: 10px; background: rgba(0,0,0,0.5); }
+        .user-txt { color: #fff; margin-bottom: 5px; }
+        .ai-txt { color: #00ff41; margin-bottom: 15px; font-weight: bold; }
+        input[type="text"] { background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 10px; outline: none; width: calc(100% - 22px); }
+        .toggle-container { margin: 10px 0; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h2>NEURAL INTERFACE</h2>
+        <div id="chat-output"></div>
+        <div class="toggle-container">
+            <input type="checkbox" id="learnToggle"> <label for="learnToggle">ENABLE LEARNING MODE</label>
+        </div>
+        <input type="text" id="userInput" placeholder="Input command..." onkeypress="if(event.key==='Enter') process()">
+    </div>
+    <svg id="visualizer"></svg>
+
+    <script>
+        let isLearningState = false;
+        let lastUnknown = "";
+
+        async function process() {
+            const input = document.getElementById('userInput');
+            const chat = document.getElementById('chat-output');
+            const learnMode = document.getElementById('learnToggle').checked;
+
+            let payload = { query: input.value, learn_mode: learnMode };
+            if (isLearningState) {
+                payload.definition = input.value;
+                payload.query = lastUnknown;
+                isLearningState = false;
+            }
+
+            chat.innerHTML += `<div class="user-txt">> ${input.value}</div>`;
+
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (data.status === "learning_required") {
+                chat.innerHTML += `<div class="ai-txt" style="color:#ff0;">Unknown. Provide definition for '${input.value}':</div>`;
+                lastUnknown = input.value;
+                isLearningState = true;
+            } else {
+                chat.innerHTML += `<div class="ai-txt">AI: ${data.response}</div>`;
+            }
+
+            updateGraph(data.graph);
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function updateGraph(data) {
+            const svg = d3.select("#visualizer"), width = window.innerWidth - 350, height = window.innerHeight;
+            svg.selectAll("*").remove();
+
+            const simulation = d3.forceSimulation(data.nodes)
+                .force("link", d3.forceLink(data.links).id(d => d.id))
+                .force("charge", d3.forceManyBody().strength(-150))
+                .force("center", d3.forceCenter(width / 2, height / 2));
+
+            const link = svg.append("g").selectAll("line").data(data.links).enter().append("line")
+                .attr("stroke", "#004411").attr("stroke-width", 1);
+
+            const node = svg.append("g").selectAll("circle").data(data.nodes).enter().append("circle")
+                .attr("r", d => d.group === 1 ? 8 : 4)
+                .attr("fill", d => d.group === 1 ? "#ff0000" : "#00ff41");
+
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+                node.attr("cx", d => d.x).attr("cy", d => d.y);
+            });
+        }
+    </script>
+</body>
+</html>
