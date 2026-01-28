@@ -201,6 +201,130 @@
 </script>
 </body>
 </html>
+        if (synth.speaking) synth.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        // ចំណាំ៖ ភាសាខ្មែរអាចអាស្រ័យលើ Browser/OS របស់អ្នក
+        synth.speak(utter);
+    }
+
+    // --- ២. ម៉ាស៊ីនវិភាគ (Similarity Logic) ---
+    function calculateSimilarity(s1, s2) {
+        let longer = s1.toLowerCase(), shorter = s2.toLowerCase();
+        if (s1.length < s2.length) [longer, shorter] = [shorter, longer];
+        if (longer.length === 0) return 1.0;
+        return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
+    }
+
+    function editDistance(s1, s2) {
+        let costs = [];
+        for (let i = 0; i <= s1.length; i++) {
+            let lastValue = i;
+            for (let j = 0; j <= s2.length; j++) {
+                if (i === 0) costs[j] = j;
+                else if (j > 0) {
+                    let newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
+                }
+            }
+            if (i > 0) costs[s2.length] = lastValue;
+        }
+        return costs[s2.length];
+    }
+
+    // --- ៣. ការរៀន និងឆ្លើយតប ---
+    async function bootSystem() {
+        const saved = localStorage.getItem('huokaingthara_core');
+        if (saved) brain = JSON.parse(saved);
+        else {
+            try {
+                const res = await fetch('brain.json');
+                brain = await res.json();
+            } catch (e) { brain = {"សួស្តី": "ខ្ញុំជា AI ឆ្លាតវៃ"}; }
+        }
+        updateUI();
+        initGraph();
+    }
+
+    function processInput(q) {
+        const chat = document.getElementById('chat-output');
+        chat.innerHTML += `<div class="user-msg">អ្នក៖ ${q}</div>`;
+
+        if (isLearning) {
+            brain[lastQuery.toLowerCase()] = q;
+            localStorage.setItem('huokaingthara_core', JSON.stringify(brain));
+            chat.innerHTML += `<div class="ai-msg">បានរៀន៖ ${q}</div>`;
+            speak("ការចងចាំត្រូវបានរក្សាទុក");
+            isLearning = false;
+            updateUI();
+            return;
+        }
+
+        let bestMatch = null, maxScore = 0;
+        for (let key in brain) {
+            let score = calculateSimilarity(q, key);
+            if (score > maxScore) { maxScore = score; bestMatch = key; }
+        }
+
+        if (maxScore > 0.4) {
+            const res = brain[bestMatch];
+            chat.innerHTML += `<div class="ai-msg">AI៖ ${res}</div>`;
+            speak(res);
+        } else {
+            chat.innerHTML += `<div class="ai-msg" style="color:yellow;">មិនស្គាល់ពាក្យនេះទេ។ សូមបង្រៀនខ្ញុំ៖</div>`;
+            speak("សូមជួយបង្រៀនខ្ញុំផង");
+            isLearning = true;
+            lastQuery = q;
+        }
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    document.getElementById('userInput').onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            processInput(e.target.value);
+            e.target.value = "";
+        }
+    };
+
+    function updateUI() {
+        document.getElementById('stats').innerText = `Neural Pathways: ${Object.keys(brain).length}`;
+        updateGraph();
+    }
+
+    function downloadBrain() {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(brain, null, 4)], {type:"application/json"}));
+        a.download = "brain.json"; a.click();
+    }
+
+    // --- ៤. D3 Visualizer ---
+    function initGraph() { updateGraph(); }
+    function updateGraph() {
+        const svg = d3.select("#visualizer"), width = window.innerWidth - 350, height = window.innerHeight;
+        svg.selectAll("*").remove();
+        const nodes = [{id:"CORE", group:1}], links = [];
+        Object.keys(brain).slice(-60).forEach(k => {
+            nodes.push({id:k, group:2});
+            links.push({source:"CORE", target:k});
+        });
+        const sim = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id(d=>d.id))
+            .force("charge", d3.forceManyBody().strength(-100)).force("center", d3.forceCenter(width/2, height/2));
+        const l = svg.append("g").selectAll("line").data(links).enter().append("line").attr("stroke", "#002200");
+        const n = svg.append("g").selectAll("circle").data(nodes).enter().append("circle")
+            .attr("r", d=>d.group===1?8:4).attr("fill", d=>d.group===1?"red":"#00ff41");
+        sim.on("tick", () => {
+            l.attr("x1", d=>d.source.x).attr("y1", d=>d.source.y).attr("x2", d=>d.target.x).attr("y2", d=>d.target.y);
+            n.attr("cx", d=>d.x).attr("cy", d=>d.y);
+        });
+    }
+    window.onload = bootSystem;
+</script>
+</body>
+</html>
 if (i === 0) costs[j] = j;
                 else if (j > 0) {
                     let newValue = costs[j - 1];
