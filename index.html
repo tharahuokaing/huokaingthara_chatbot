@@ -2,221 +2,132 @@
 <html lang="km">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Huokaingthara Sentient OS v6.0</title>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <title>Sentient OS v6.0 - Ghost Protocol</title>
+    <meta name="robots" content="noindex, nofollow, noarchive, nocache">
+    <meta name="googlebot" content="noindex, nofollow">
     
     <style>
-        :root {
-            --holo-blue: #00f2ff;
-            --holo-green: #00ff41;
-            --bg-dark: #020b10;
-            --scanline: rgba(0, 242, 255, 0.1);
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 50% 50%, #0a2a3a 0%, #020b10 100%),
-                              linear-gradient(var(--scanline) 50%, transparent 50%);
-            background-size: 100% 100%, 100% 4px;
-            color: var(--holo-blue);
-            font-family: 'Courier New', monospace;
-            margin: 0; display: flex; height: 100vh; overflow: hidden;
-            animation: flicker 0.15s infinite;
-        }
-
-        /* --- Matrix Boot Layer --- */
-        #boot-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: var(--holo-green); z-index: 9999;
-            padding: 40px; overflow: hidden; display: block;
-        }
-
-        #sidebar {
-            width: 360px; background: rgba(2, 11, 16, 0.9);
-            border-right: 1px solid var(--holo-blue);
-            backdrop-filter: blur(10px); padding: 20px;
-            display: flex; flex-direction: column; z-index: 10;
-        }
-
-        #chat-output {
-            flex-grow: 1; overflow-y: auto; border: 1px solid var(--holo-blue);
-            background: rgba(0, 242, 255, 0.05); padding: 10px; margin-bottom: 15px;
-            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
-        }
-
-        .ai-msg { color: var(--holo-green); text-shadow: 0 0 8px var(--holo-green); border-left: 2px solid var(--holo-green); padding-left: 10px; margin-bottom: 15px; }
-        .user-msg { color: #fff; opacity: 0.7; margin: 10px 0; font-size: 0.8em; }
-
-        input { background: rgba(0, 242, 255, 0.1); border: 1px solid var(--holo-blue); color: var(--holo-blue); padding: 12px; outline: none; }
-        button { border: 1px solid var(--holo-blue); background: transparent; color: var(--holo-blue); cursor: pointer; padding: 10px; transition: 0.3s; }
-        button:hover { background: var(--holo-blue); color: #000; box-shadow: 0 0 20px var(--holo-blue); }
-
-        @keyframes flicker { 0% { opacity: 0.98; } 100% { opacity: 1; } }
-        #visualizer { flex-grow: 1; filter: drop-shadow(0 0 10px var(--holo-blue)); }
+        :root { --blue: #00f2ff; --green: #00ff41; --bg: #01080b; }
+        body { background: var(--bg); color: var(--blue); font-family: 'Courier New', monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Layout */
+        #side { width: 320px; border-right: 1px solid var(--blue); display: flex; flex-direction: column; padding: 20px; background: rgba(0,0,0,0.8); z-index: 10; }
+        
+        /* Chat Output Filter Area */
+        #out { flex-grow: 1; overflow-y: auto; padding: 10px; border: 1px solid rgba(0, 242, 255, 0.2); margin-bottom: 15px; scroll-behavior: smooth; }
+        .ai { color: var(--green); text-shadow: 0 0 5px var(--green); margin-bottom: 12px; border-left: 2px solid var(--green); padding-left: 8px; }
+        .user { color: #fff; opacity: 0.5; margin-bottom: 8px; font-size: 0.85em; }
+        
+        /* Input Stealth Style */
+        input, button { background: rgba(0,242,255,0.05); border: 1px solid var(--blue); color: var(--blue); padding: 12px; outline: none; font-family: inherit; }
+        button { cursor: pointer; transition: 0.2s; font-weight: bold; }
+        button:hover { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
+        
+        /* Matrix Boot Overlay */
+        #boot { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; padding: 30px; color: var(--green); font-size: 1.2em; line-height: 1.6; }
     </style>
 </head>
 <body>
 
-<div id="boot-screen">
-    <div id="boot-logs" style="line-height: 1.8; font-size: 1.1em; text-shadow: 0 0 5px var(--holo-green);"></div>
-</div>
+<div id="boot"></div>
 
-<div id="sidebar">
-    <div id="sys-status" style="font-size: 0.7em; color: yellow; margin-bottom: 5px;">SINGULARITY: ACTIVE</div>
-    <h2 style="text-align: center; letter-spacing: 2px;">SENTIENT CORE</h2>
-    <div id="chat-output"></div>
-
-    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <input type="text" id="userInput" placeholder="បញ្ចូលបញ្ជា..." style="flex:1;">
-        <button id="mic-btn">🎤</button>
-    </div>
-
-    <div style="font-size: 0.7em; color: #888;">
-        TRAIN VIA CSV: <input type="file" id="csvLoader" accept=".csv" style="width: 100%;">
-    </div>
-
-    <div style="display: flex; gap: 5px; margin-top: 10px;">
-        <button onclick="downloadBrain()" style="flex:1; font-size: 9px;">EXPORT BRAIN</button>
-        <button onclick="localStorage.clear(); location.reload();" style="flex:1; font-size: 9px; color: red;">WIPE DATA</button>
+<div id="side">
+    <h2 style="text-align:center; letter-spacing:3px; margin-top:0;">GHOST CORE</h2>
+    <div style="font-size: 0.7em; color: yellow; margin-bottom: 10px;">PROTOCOL: STEALTH ACTIVE</div>
+    
+    <div id="out"></div>
+    
+    <input type="text" id="in" placeholder="Execute command..." autocomplete="off">
+    
+    <div style="margin-top:15px; display:flex; gap:8px;">
+        <input type="file" id="csv" accept=".csv" style="display:none">
+        <button onclick="document.getElementById('csv').click()" style="flex:2">IMPORT DATA</button>
+        <button onclick="wipe()" style="color:#ff4444; flex:1">WIPE</button>
     </div>
 </div>
-
-<svg id="visualizer"></svg>
 
 <script>
-    let brain = {};
-    const synth = window.speechSynthesis;
+    // Machine Learning Memory (Offline)
+    let brain = JSON.parse(localStorage.getItem('ghost_brain') || '{}');
+    let learningMode = null;
+    const output = document.getElementById('out');
+    const input = document.getElementById('in');
 
-    // --- ១. MATRIX BOOT SEQUENCE (រត់ភ្លាមៗនៅពេល Load) ---
-    const bootLines = [
-        "[OK] INITIALIZING HUOKAINGTHARA KERNEL v6.0",
-        "[OK] SCANNING NEURAL NETWORKS...",
-        "[OK] LOADING CORE KNOWLEDGE BASE...",
-        "[OK] ESTABLISHING VISUAL INTERFACE...",
-        "------------------------------------",
-        "STATUS: SYSTEM FULLY OPERATIONAL.",
-        "------------------------------------",
-        "ACCESS GRANTED. WELCOME OPERATOR."
+    // 1. GHOST BOOT SEQUENCE
+    const logs = [
+        "EXECUTING GHOST PROTOCOL...",
+        "ENCRYPTING LOCAL_HOST...",
+        "DELETING EXTERNAL TRACES...",
+        "OFFLINE MACHINE LEARNING: READY.",
+        "SYSTEM IS NOW INVISIBILE."
     ];
-
-    function startBootSequence() {
-        const logBox = document.getElementById('boot-logs');
-        let i = 0;
-        const interval = setInterval(() => {
-            if (i < bootLines.length) {
-                logBox.innerHTML += bootLines[i] + "<br>";
-                i++;
-            } else {
-                clearInterval(interval);
-                setTimeout(() => {
-                    document.getElementById('boot-screen').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('boot-screen').style.display = 'none';
-                        addLog("<b>[CORE ONLINE]</b><br>Huokaingthara ត្រៀមខ្លួនជាស្រេច។", "ai-msg");
-                        speak("System online. I am ready to evolve.");
-                    }, 500);
-                }, 1000);
-            }
-        }, 200);
-    }
-
-    // --- ២. CORE AI LOGIC (Fuzzy Logic & Learning) ---
-    function speak(text) { if (synth) synth.speak(new SpeechSynthesisUtterance(text)); }
-
-    function addLog(text, className) {
-        const out = document.getElementById('chat-output');
-        out.innerHTML += `<div class="${className}">${text}</div>`;
-        out.scrollTop = out.scrollHeight;
-    }
-
-    function getSimilarity(s1, s2) {
-        let longer = s1.toLowerCase(), shorter = s2.toLowerCase();
-        if (s1.length < s2.length) [longer, shorter] = [shorter, longer];
-        if (longer.length === 0) return 1.0;
-        return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
-    }
-
-    function editDistance(s1, s2) {
-        let costs = [];
-        for (let i = 0; i <= s1.length; i++) {
-            let lastValue = i;
-            for (let j = 0; j <= s2.length; j++) {
-                if (i === 0) costs[j] = j;
-                else if (j > 0) {
-                    let newValue = costs[j - 1];
-                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                    costs[j - 1] = lastValue;
-                    lastValue = newValue;
-                }
-            }
-            if (i > 0) costs[s2.length] = lastValue;
-        }
-        return costs[s2.length];
-    }
-
-    function processInput(q) {
-        addLog(`> ${q}`, "user-msg");
-        let bestMatch = null, maxScore = 0;
-        for (let key in brain) {
-            let score = getSimilarity(q, key);
-            if (score > maxScore) { maxScore = score; bestMatch = key; }
-        }
-        if (maxScore > 0.45) {
-            addLog(`AI: ${brain[bestMatch]}`, "ai-msg");
-            speak(brain[bestMatch]);
+    let i = 0;
+    const bootInterval = setInterval(() => {
+        if(i < logs.length) {
+            document.getElementById('boot').innerHTML += `> ${logs[i++]}<br>`;
         } else {
-            addLog(`AI: មិនស្គាល់ទម្រង់ទិន្នន័យនេះទេ។ សូមបង្រៀនខ្ញុំតាម CSV។`, "ai-msg");
+            clearInterval(bootInterval);
+            setTimeout(() => document.getElementById('boot').style.display='none', 800);
+        }
+    }, 250);
+
+    // 2. RESPONSE FILTER & LOGIC
+    function logMsg(msg, type) {
+        output.innerHTML += `<div class="${type}">${msg}</div>`;
+        output.scrollTop = output.scrollHeight;
+    }
+
+    function process(q) {
+        q = q.trim().toLowerCase();
+        if(!q) return;
+
+        // Ghost Security: Clear Console every interaction
+        console.clear();
+        logMsg("> " + q, "user");
+
+        // Learning Mode Logic
+        if(learningMode) {
+            brain[learningMode] = q;
+            localStorage.setItem('ghost_brain', JSON.stringify(brain));
+            logMsg("GHOST_CORE: Neural pattern integrated.", "ai");
+            learningMode = null;
+            return;
+        }
+
+        // Search & Filter Response
+        if(brain[q]) {
+            logMsg("AI: " + brain[q], "ai");
+        } else {
+            // Fallback: If no data, trigger Machine Learning
+            logMsg(`AI: Pattern "${q}" not found in local memory. Define it:`, "ai");
+            learningMode = q;
         }
     }
 
-    // --- ៣. DATA & GRAPH VISUALIZER ---
-    
-
-    window.onload = () => {
-        startBootSequence();
-        const saved = localStorage.getItem('huokaingthara_v6');
-        if (saved) brain = JSON.parse(saved);
-        updateGraph();
+    input.onkeypress = (e) => {
+        if(e.key === 'Enter') { process(input.value); input.value = ''; }
     };
 
-    function updateGraph() {
-        const svg = d3.select("#visualizer"), width = window.innerWidth - 360, height = window.innerHeight;
-        svg.selectAll("*").remove();
-        const nodes = [{id:"CORE", group:1}], links = [];
-        Object.keys(brain).slice(-50).forEach(k => {
-            nodes.push({id:k, group:2}); links.push({source:"CORE", target:k});
-        });
-        const sim = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id(d=>d.id)).force("charge", d3.forceManyBody().strength(-100)).force("center", d3.forceCenter(width/2, height/2));
-        const l = svg.append("g").selectAll("line").data(links).enter().append("line").attr("stroke", "#002233");
-        const n = svg.append("g").selectAll("circle").data(nodes).enter().append("circle").attr("r", d=>d.group===1?8:3).attr("fill", d=>d.group===1?"red":"#00f2ff");
-        sim.on("tick", () => { l.attr("x1", d=>d.source.x).attr("y1", d=>d.source.y).attr("x2", d=>d.target.x).attr("y2", d=>d.target.y); n.attr("cx", d=>d.x).attr("cy", d=>d.y); });
-    }
-
-    document.getElementById('userInput').onkeypress = (e) => {
-        if (e.key === 'Enter') { processInput(e.target.value); e.target.value = ""; }
-    };
-
-    document.getElementById('csvLoader').onchange = function(e) {
+    // 3. OFFLINE CSV TRAINING
+    document.getElementById('csv').onchange = (e) => {
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            ev.target.result.split('\n').forEach(row => {
-                const p = row.split(',');
-                if (p.length >= 2) brain[p[0].trim().toLowerCase()] = p[1].trim();
+        reader.onload = (ev) => {
+            const rows = ev.target.result.split('\n');
+            rows.forEach(row => {
+                const parts = row.split(',');
+                if(parts.length >= 2) brain[parts[0].trim().toLowerCase()] = parts[1].trim();
             });
-            localStorage.setItem('huokaingthara_v6', JSON.stringify(brain));
-            updateGraph();
-            addLog("AI: ចំណេះដឹងត្រូវបានបញ្ចូលតាម CSV។", "ai-msg");
+            localStorage.setItem('ghost_brain', JSON.stringify(brain));
+            logMsg("SYSTEM: Batch data integrated into core.", "ai");
         };
         reader.readAsText(e.target.files[0]);
     };
 
-    function downloadBrain() {
-        const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(brain, null, 4));
-        const link = document.createElement('a');
-        link.setAttribute("href", data); link.setAttribute("download", "brain.json");
-        link.click();
+    function wipe() {
+        if(confirm("Confirm core wipe? All local memory will be deleted.")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 </script>
 </body>
