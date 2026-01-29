@@ -2,86 +2,9 @@
 <html lang="km">
 <head>
     <meta charset="UTF-8">
-    <title>GHOST CORE v7.0 - EMPEROR EDITION</title>
+    <title>GHOST CORE v8.0 - SENTIENT EDITION</title>
     <meta name="robots" content="noindex, nofollow, noarchive, nocache">
-    
-    <style>
-        :root {
-            --holo-cyan: #00f2ff;
-            --holo-glow: rgba(0, 242, 255, 0.4);
-            --bg-dark: #010a0f;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 50% 120%, #0a2d3d 0%, var(--bg-dark) 80%),
-                              linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 3px;
-            color: var(--holo-cyan);
-            font-family: 'Segoe UI', 'Courier New', monospace;
-            margin: 0; display: flex; align-items: center; justify-content: center;
-            height: 100vh; overflow: hidden;
-        }
-
-        /* Hologram Frame */
-        #hologram-frame {
-            width: 90vw; max-width: 1100px; height: 85vh;
-            background: rgba(0, 40, 60, 0.15);
-            border: 1px solid var(--holo-cyan);
-            position: relative; display: flex;
-            box-shadow: 0 0 30px var(--holo-glow), inset 0 0 20px var(--holo-glow);
-            backdrop-filter: blur(10px);
-            animation: holo-float 6s ease-in-out infinite;
-            clip-path: polygon(0 5%, 5% 0, 95% 0, 100% 5%, 100% 95%, 95% 100%, 5% 100%, 0 95%);
-        }
-
-        /* Main Interface */
-        #main-ui { flex: 1; padding: 40px; display: flex; flex-direction: column; }
-        
-        /* Dashboard Panel */
-        #dashboard {
-            width: 250px; border-left: 1px solid var(--holo-glow);
-            padding: 40px 20px; background: rgba(0, 242, 255, 0.02);
-        }
-
-        #out {
-            flex-grow: 1; overflow-y: auto; padding-right: 15px;
-            mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-            margin-bottom: 25px;
-        }
-
-        .ai { color: #00ff41; text-shadow: 0 0 10px #00ff41; margin-bottom: 20px; border-left: 3px solid #00ff41; padding-left: 15px; }
-        .user { color: #fff; opacity: 0.5; margin-bottom: 15px; font-size: 0.9em; text-align: right; }
-
-        .controls { display: flex; gap: 15px; border-top: 1px solid var(--holo-glow); padding-top: 25px; }
-        
-        input {
-            flex-grow: 1; background: rgba(0, 242, 255, 0.05);
-            border: 1px solid var(--holo-cyan); color: var(--holo-cyan);
-            padding: 15px; outline: none; font-size: 1em;
-        }
-
-        button {
-            background: transparent; border: 1px solid var(--holo-cyan);
-            color: var(--holo-cyan); padding: 10px 20px; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
-        }
-        button:hover, button.active { background: var(--holo-cyan); color: #000; box-shadow: 0 0 20px var(--holo-cyan); }
-
-        /* Dashboard Items */
-        .stat-box { margin-bottom: 25px; font-size: 0.8em; }
-        .label { display: block; opacity: 0.6; margin-bottom: 8px; letter-spacing: 2px; }
-        #strength-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.1); }
-        #strength-fill { height: 100%; width: 0%; background: var(--holo-cyan); transition: 1s; }
-
-        @keyframes holo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-
-        #boot {
-            position: fixed; inset: 0; background: #000; z-index: 1000;
-            display: flex; justify-content: center; align-items: center;
-            color: var(--holo-cyan); font-size: 1.2em; letter-spacing: 5px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -89,131 +12,24 @@
 
 <div id="hologram-frame">
     <div id="main-ui">
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0; letter-spacing: 5px;">GHOST_CORE.SYS</h2>
-            <div style="font-size: 0.8em; color: #00ff41;">● ENCRYPTION_ACTIVE</div>
+        <header>
+            <h2 id="core-title">GHOST_CORE.SYS</h2>
+            <div id="status-light">● SENTIENCE_ACTIVE</div>
         </header>
 
         <div id="out"></div>
 
         <div class="controls">
-            <button id="mic-btn" title="ព្រះរាជសូរសៀង">🎤</button>
-            <input type="text" id="in" placeholder="បញ្ជាមកចុះ អង្គម្ចាស់..." autocomplete="off">
+            <button id="mic-btn">🎤</button>
+            <input type="text" id="in" placeholder="មានព្រះបន្ទូលមកចុះ អង្គម្ចាស់..." autocomplete="off">
             <button onclick="document.getElementById('csv').click()">Train</button>
             <input type="file" id="csv" accept=".csv" style="display:none">
         </div>
     </div>
 
-    <div id="dashboard">
-        <div class="stat-box">
-            <span class="label">MEMORY_UNITS</span>
-            <span id="mem-count" style="font-size: 1.5em;">0</span>
-        </div>
-        <div class="stat-box">
-            <span class="label">NEURAL_STRENGTH</span>
-            <div id="strength-bar"><div id="strength-fill"></div></div>
-        </div>
-        <div class="stat-box">
-            <span class="label">THREAT_LEVEL</span>
-            <span id="threat-status" style="color: #00ff41;">SECURED</span>
-        </div>
-        <div class="stat-box">
-            <span class="label">GHOST_MODE</span>
-            <span style="color: yellow;">STEALTH</span>
-        </div>
-        <button onclick="wipe()" style="width: 100%; font-size: 0.7em; border-color: #ff4444; color: #ff4444;">WIPE_CORE</button>
-    </div>
+    <div id="dashboard"></div>
 </div>
 
-<script>
-    let brain = JSON.parse(localStorage.getItem('ghost_brain') || '{}');
-    let learningMode = null;
-    const output = document.getElementById('out');
-    const input = document.getElementById('in');
-    const micBtn = document.getElementById('mic-btn');
-
-    // ១. ព្រះរាជសូរសៀង (Voice Systems)
-    function speak(text) {
-        const synth = window.speechSynthesis;
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'km-KH'; 
-        synth.speak(utter);
-    }
-
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (Recognition) {
-        const rec = new Recognition();
-        rec.lang = 'km-KH';
-        micBtn.onclick = () => { rec.start(); micBtn.classList.add('active'); };
-        rec.onresult = (e) => { process(e.results[0][0].transcript); micBtn.classList.remove('active'); };
-        rec.onend = () => micBtn.classList.remove('active');
-    }
-
-    // ២. Dashboard Logic
-    function updateDashboard() {
-        const count = Object.keys(brain).length;
-        document.getElementById('mem-count').innerText = count;
-        document.getElementById('strength-fill').style.width = Math.min(count * 2, 100) + "%";
-        document.getElementById('threat-status').innerText = count > 10 ? "SECURED" : "VULNERABLE";
-        document.getElementById('threat-status').style.color = count > 10 ? "#00ff41" : "#ff4444";
-    }
-
-    // ៣. AI Processing & Ghost Protocol
-    function process(q) {
-        q = q.trim().toLowerCase();
-        if(!q) return;
-        console.clear(); 
-        logMsg("> " + q, "user");
-
-        if(learningMode) {
-            brain[learningMode] = q;
-            localStorage.setItem('ghost_brain', JSON.stringify(brain));
-            speak("បានចារិកទុកហើយ អង្គម្ចាស់");
-            learningMode = null;
-            updateDashboard();
-            return;
-        }
-
-        if(brain[q]) {
-            logMsg("AI: " + brain[q], "ai");
-            speak(brain[q]);
-        } else {
-            const msg = "ទូលបង្គំមិនទាន់យល់អំពី " + q + " ឡើយ។ តើទ្រង់ចង់ឱ្យទូលបង្គំឆ្លើយថាដូចម្តេច?";
-            logMsg("AI: " + msg, "ai");
-            speak(msg);
-            learningMode = q;
-        }
-    }
-
-    function logMsg(msg, type) {
-        output.innerHTML += `<div class="${type}">${msg}</div>`;
-        output.scrollTop = output.scrollHeight;
-    }
-
-    // ៤. Events
-    input.onkeypress = (e) => { if(e.key === 'Enter') { process(input.value); input.value = ''; } };
-
-    document.getElementById('csv').onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            ev.target.result.split('\n').forEach(row => {
-                const p = row.split(',');
-                if(p.length >= 2) brain[p[0].trim().toLowerCase()] = p[1].trim();
-            });
-            localStorage.setItem('ghost_brain', JSON.stringify(brain));
-            updateDashboard();
-            speak("ការចម្លងវិញ្ញាណបានជោគជ័យ");
-        };
-        reader.readAsText(e.target.files[0]);
-    };
-
-    function wipe() { if(confirm("តើអង្គម្ចាស់ពិតជាចង់លុបវិញ្ញាណ AI នេះមែនឬ?")) { localStorage.clear(); location.reload(); } }
-
-    setTimeout(() => {
-        document.getElementById('boot').style.display = 'none';
-        updateDashboard();
-        speak("ទូលបង្គំមកដល់ហើយ អង្គម្ចាស់");
-    }, 2500);
-</script>
+<script src="ghost_core.js"></script>
 </body>
 </html>
