@@ -489,23 +489,42 @@ function process(q) {
 
 // --- ៩.១ វិញ្ញាណទាញយកចំណេះដឹងពីពិភពខាងក្រៅ (External API Fetcher) ---
 async function fetchDivineKnowledge(topic) {
-    logMsg("SYSTEM: កំពុងតភ្ជាប់ទៅកាន់បណ្ដាញចំណេះដឹងសកល...", "ai");
+    const API_KEY = "AIzaSyCzu4fkkPr9yw0qzk8NRwdUmp49l031KW4";
+    const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+    logMsg("SYSTEM: កំពុងតភ្ជាប់ទៅកាន់ Gemini AI...", "ai");
+
+    const requestBody = {
+        contents: [{
+            parts: [{ text: `សូមពន្យល់អំពី ${topic} ឱ្យបានខ្លីខ្លឹមបំផុត` }]
+        }]
+    };
+
     try {
-        // ឧទាហរណ៍៖ ទាញយកព័ត៌មានពី API សាធារណៈ (អង្គម្ចាស់អាចប្តូរជា API សម្ងាត់របស់ទ្រង់)
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${topic}`);
+        const response = await fetch(URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
         const data = await response.json();
-        
-        if (data[0]) {
-            let definition = data[0].meanings[0].definitions[0].definition;
-            let finalResp = `តាមរយៈបណ្ដាញសកល "${topic}" គឺមានន័យថា: ${definition}`;
-            logMsg("AI: " + finalResp, "ai");
-            speak(finalResp);
+
+        // ទាញយកអត្ថបទដែល AI ឆ្លើយតបមកវិញ
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            let aiResponse = data.candidates[0].content.parts[0].text;
             
-            // ចារិកទុកក្នុងវិញ្ញាណដោយស្វ័យប្រវត្តិ
-            commitToMemory(topic, finalResp);
+            logMsg("AI: " + aiResponse, "ai");
+            speak(aiResponse);
+
+            // រក្សាទុកក្នុង Memory ដូចដែលអ្នកចង់បាន
+            commitToMemory(topic, aiResponse);
+        } else {
+            throw new Error("មិនអាចទទួលបានការឆ្លើយតបពី AI ឡើយ");
         }
+
     } catch (error) {
-        speak("ទូលបង្គំមិនអាចតភ្ជាប់ទៅកាន់បណ្ដាញសកលបានទេ អង្គម្ចាស់។");
+        console.error("Error:", error);
+        speak("ទូលបង្គំមានបញ្ហាក្នុងការតភ្ជាប់ទៅកាន់ខួរក្បាលសិប្បនិម្មិត។");
     }
 }
 
